@@ -47,10 +47,10 @@ def test_server_start_config(product):
 
     with mock.patch.object(environment.serve, "start") as start:
         with environment.TestEnvironment(test_paths,
-                                         sslutils.environments["none"](None),
                                          False,
                                          None,
                                          env_options,
+                                         {},
                                          env_extras):
             start.assert_called_once()
             args = start.call_args

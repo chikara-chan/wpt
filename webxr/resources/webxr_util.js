@@ -1,3 +1,25 @@
+// These tests rely on the User Agent providing an implementation of the
+// WebXR Testing API (https://github.com/immersive-web/webxr-test-api).
+//
+// In Chromium-based browsers, this implementation is provided by a Javascript
+// shim in order to reduce the amount of test-only code shipped to users. To
+// enable these tests the browser must be run with these options:
+//
+//   --enable-blink-features=MojoJS,MojoJSTest
+
+function xr_promise_test(func, name, properties) {
+  promise_test(async (t) => {
+    // Perform any required test setup:
+
+    if (window.XRTest === undefined) {
+      // Chrome setup
+      await loadChromiumResources;
+    }
+
+    return func(t);
+  }, name, properties);
+}
+
 // This functions calls a callback with each API object as specified
 // by https://immersive-web.github.io/webxr/spec/latest/, allowing
 // checks to be made on all ojects.
@@ -26,3 +48,30 @@ function forEachWebxrObject(callback) {
   callback(window.XRSessionEvent, 'XRSessionEvent');
   callback(window.XRCoordinateSystemEvent, 'XRCoordinateSystemEvent');
 }
+
+// Code for loading test api in chromium.
+let loadChromiumResources = Promise.resolve().then(() => {
+  if (!MojoInterfaceInterceptor) {
+    // Do nothing on non-Chromium-based browsers or when the Mojo bindings are
+    // not present in the global namespace.
+    return;
+  }
+
+  let chain = Promise.resolve();
+  ['/resources/chromium/mojo_bindings.js',
+   '/resources/chromium/geometry.mojom.js', '/resources/chromium/time.mojom.js',
+   '/resources/chromium/vr_service.mojom.js',
+   '/resources/chromium/webxr-test.js', '/resources/testdriver.js',
+   '/resources/testdriver-vendor.js',
+  ].forEach(path => {
+    let script = document.createElement('script');
+    script.src = path;
+    script.async = false;
+    chain = chain.then(() => new Promise(resolve => {
+                         script.onload = () => resolve();
+                       }));
+    document.head.appendChild(script);
+  });
+
+  return chain;
+});
